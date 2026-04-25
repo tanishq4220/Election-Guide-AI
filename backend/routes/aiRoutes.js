@@ -13,7 +13,11 @@ router.post('/chat', async (req, res) => {
     const response = await getElectionResponse(prompt, history, userId, mode);
     res.json({ message: response });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Route Error:", error.message);
+    res.status(500).json({ 
+      error: "Failed to generate response from AI",
+      details: error.message 
+    });
   }
 });
 

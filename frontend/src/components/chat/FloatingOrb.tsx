@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Bot, Zap, Info, Mic, Volume2 } from "lucide-react";
+import { MessageCircle, X, Send, Bot, Zap, Mic, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { auth } from "@/lib/firebase";
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User } from "firebase/auth";
 
 export const FloatingOrb = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<"simple" | "detailed">("detailed");
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [messages, setMessages] = useState<{ role: "user" | "bot"; text: string }[]>([
     { role: "bot", text: "Welcome! I'm your contextual Election AI. How can I help you navigate democracy today?" },
   ]);
@@ -19,7 +19,10 @@ export const FloatingOrb = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    onAuthStateChanged(auth, (u) => setUser(u));
+    if (auth && typeof auth.onAuthStateChanged === 'function') {
+      const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+      return () => unsubscribe();
+    }
   }, []);
 
   useEffect(() => {
@@ -27,8 +30,10 @@ export const FloatingOrb = () => {
   }, [messages]);
 
   const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    if (auth && typeof signInWithPopup === 'function') {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    }
   };
 
   const handleSend = async () => {
@@ -39,13 +44,14 @@ export const FloatingOrb = () => {
     setMessages(newMessages);
     setLoading(true);
 
-    // Mock Google Analytics Event
-    console.log("GA Event: chat_message_sent", { mode });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/ai/chat`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({ 
           prompt: userMsg, 
           history: messages,
@@ -53,18 +59,30 @@ export const FloatingOrb = () => {
           mode 
         }),
       });
+      clearTimeout(timeoutId);
       const data = await res.json();
-      setMessages([...newMessages, { role: "bot", text: data.message }]);
-    } catch (error) {
-      setMessages([...newMessages, { role: "bot", text: "Connection error. Please try again." }]);
+      const reply = data.message || data.reply;
+      
+      if (!reply) {
+        throw new Error("No reply from AI");
+      }
+
+      setMessages([...newMessages, { role: "bot", text: reply }]);
+    } catch (error: any) {
+      const errorMessage = error.name === 'AbortError' 
+        ? "Response took too long. Please try a shorter question." 
+        : "Sorry, I couldn't understand. Try again.";
+      setMessages([...newMessages, { role: "bot", text: errorMessage }]);
     } finally {
       setLoading(false);
     }
   };
 
   const speak = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    window.speechSynthesis.speak(utterance);
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   return (
@@ -117,41 +135,50 @@ export const FloatingOrb = () => {
 
             {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
-              {messages.map((msg, i) => (
-                <div key={i} className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}>
-                  <div
-                    className={cn(
-                      "max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed",
-                      msg.role === "user"
-                        ? "bg-blue-600 text-white rounded-tr-none shadow-lg shadow-blue-600/20"
-                        : "bg-white/10 text-white rounded-tl-none"
-                    )}
+              <AnimatePresence>
+                {messages.map((msg, i) => (
+                  <motion.div 
+                    key={i} 
+                    initial={{ opacity: 0, x: msg.role === "user" ? 10 : -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}
                   >
-                    {msg.text}
-                  </div>
-                  {msg.role === "bot" && (
-                    <button 
-                      onClick={() => speak(msg.text)}
-                      className="mt-1 text-white/20 hover:text-white/40"
-                      aria-label="Read Aloud"
+                    <div
+                      className={cn(
+                        "max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed",
+                        msg.role === "user"
+                          ? "bg-blue-600 text-white rounded-tr-none shadow-lg shadow-blue-600/20"
+                          : "bg-white/10 text-white rounded-tl-none"
+                      )}
                     >
-                      <Volume2 size={12} />
-                    </button>
-                  )}
-                </div>
-              ))}
+                      {msg.text}
+                    </div>
+                    {msg.role === "bot" && (
+                      <button 
+                        onClick={() => speak(msg.text)}
+                        className="mt-1 text-white/20 hover:text-white/40"
+                        aria-label="Read Aloud"
+                      >
+                        <Volume2 size={12} />
+                      </button>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
               {loading && (
-                <div className="flex gap-2 items-center text-white/30 text-[10px]">
-                  <Zap size={10} className="animate-bounce" /> Assistant is processing...
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex gap-2 items-center text-blue-400 text-[10px] font-medium animate-pulse"
+                >
+                  <Zap size={10} className="animate-bounce" /> Thinking...
+                </motion.div>
               )}
             </div>
 
             {/* Input */}
             <div className="p-4 border-t border-white/10 bg-white/5 flex gap-2">
-              <button className="text-white/40 hover:text-white" aria-label="Voice Input">
-                <Mic size={20} />
-              </button>
               <input
                 type="text"
                 value={input}

@@ -20,14 +20,17 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const getElectionResponse = async (prompt, history = [], userId = null, mode = "detailed") => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // UPDATED TO GEMINI-FLASH-LATEST (Verified available in this environment)
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
     
     const systemInstruction = `
-      You are "Election Guide AI". Current Mode: ${mode}.
-      If mode is "simple", explain like I am 5. Use analogies.
-      If mode is "detailed", provide comprehensive steps and legal contexts.
-      Use bullet points for lists. Always be encouraging.
-      If the user speaks Hindi, respond in Hindi.
+      You are "Election Guide AI".
+      Explain in simple, step-by-step format.
+      Support English and Hindi.
+      Current Mode: ${mode}.
+      If mode is "simple", explain like I am 5 using easy analogies.
+      If mode is "detailed", provide comprehensive steps, timelines, and legal contexts.
+      Use bullet points for lists. Always be encouraging and non-partisan.
     `;
 
     const chat = model.startChat({
@@ -56,8 +59,8 @@ const getElectionResponse = async (prompt, history = [], userId = null, mode = "
 
     return text;
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw new Error("Failed to generate response from AI");
+    console.error("FULL GEMINI ERROR:", error.message || error);
+    throw error;
   }
 };
 
