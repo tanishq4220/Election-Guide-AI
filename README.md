@@ -1,8 +1,9 @@
 # Election Guide AI: The Zero-Gravity Democracy Assistant 🌌🗳️
 
 ## 🌐 Live Demo
-👉 **Frontend**: [https://election-guide-ai.vercel.app](https://election-guide-ai.vercel.app)  
-👉 **Backend**: [https://election-guide-ai-backend-bmb4e3v2mq-uc.a.run.app](https://election-guide-ai-backend-bmb4e3v2mq-uc.a.run.app)
+👉 **Live App**: [https://election-guide-ai-frontend-bmb4e3v2mq-uc.a.run.app](https://election-guide-ai-frontend-bmb4e3v2mq-uc.a.run.app)  
+👉 **Backend API**: [https://election-guide-ai-backend-bmb4e3v2mq-uc.a.run.app](https://election-guide-ai-backend-bmb4e3v2mq-uc.a.run.app)  
+👉 **Health Check**: [https://election-guide-ai-backend-bmb4e3v2mq-uc.a.run.app/health](https://election-guide-ai-backend-bmb4e3v2mq-uc.a.run.app/health)
 
 ## 📂 GitHub Repository
 👉 [https://github.com/tanishq4220/Election-Guide-AI](https://github.com/tanishq4220/Election-Guide-AI)
@@ -31,15 +32,27 @@ A context-aware, intelligent ecosystem that provides:
 
 - **🌌 Anti-Gravity UI**: Floating cards with smooth drift, mouse-based parallax, and a custom cursor trail for a high-end "Apple/Google" feel.
 - **🧠 Context-Aware AI**: Gemini Pro integration that remembers chat history and adapts its tone (Simple vs. Detailed).
-- **📊 Deep Google Integration**: 
+- **📊 Deep Google Cloud Integration**: 
+    - **Google BigQuery**: Real-time analytics pipeline tracking all chat interactions, response times, and usage patterns (`backend/services/analytics.js`).
+    - **Google Cloud Logging**: Structured logging with severity levels (INFO/WARN/ERROR) for production monitoring (`backend/services/logger.js`).
+    - **Google Secret Manager**: Secure API key and credential management in production (`backend/services/secrets.js`).
     - **Firebase Auth**: Secure Google Login.
     - **Cloud Firestore**: Persistent chat history storage.
-    - **Gemini Pro**: Advanced NLP for election queries.
+    - **Gemini Pro (via Google Generative AI SDK)**: Advanced NLP for election queries.
+    - **Google Cloud Run**: Production deployment with auto-scaling containers.
 - **♿ Extreme Accessibility**: 
+    - **Skip Navigation Link**: For keyboard-only users to bypass repetitive content.
+    - **`aria-live="polite"`**: Screen readers announce new chat messages automatically.
+    - **`role="log"`**: Chat message area is semantically marked as a live log.
     - **Reduced Motion Mode**: For users with vestibular disorders.
     - **Text-to-Speech**: AI responses can be read aloud.
     - **Keyboard Nav & ARIA**: 100% compliant semantic HTML.
-- **🎯 Readiness Quiz**: Gamified check that provides instant feedback and confetti on completion.
+    - **PWA Manifest**: Installable as a progressive web app.
+- **🎯 Readiness Quiz**: Gamified check with dedicated API (`/api/quiz`) that provides instant feedback and scoring.
+- **🛡️ Production Security**:
+    - **Helmet**: CSP headers, x-frame-options, x-content-type-options.
+    - **Rate Limiting**: Global (100 req/15min) + stricter chat-specific (30 req/15min).
+    - **Input Validation & Sanitization**: XSS prevention, payload size limits (10KB), prompt length enforcement (2000 chars).
 
 ---
 
@@ -53,6 +66,14 @@ A context-aware, intelligent ecosystem that provides:
 | **Google Gemini API** | Intelligence | State-of-the-art LLM for accurate procedural explanation. |
 | **Firebase** | Auth & DB | For seamless scaling, real-time history, and secure user management. |
 | **Express.js** | Backend | Robust middleware support for rate limiting and security. |
+| **Google BigQuery** | Analytics | Real-time chat event tracking and usage analytics pipeline. |
+| **Google Cloud Logging** | Monitoring | Structured production logging with severity-based alerting. |
+| **Google Secret Manager** | Security | Secure credential management for API keys in production. |
+| **Google Cloud Run** | Deployment | Auto-scaling serverless containers with zero cold-start config. |
+| **Jest + Supertest** | Testing | 60 passing tests covering API, middleware, and utilities. |
+| **ESLint** | Code Quality | Enforced code standards with automated linting. |
+| **node-cache** | Efficiency | In-memory caching for AI responses and GET endpoints. |
+| **compression** | Performance | Gzip compression middleware reducing response sizes by ~70%. |
 
 ---
 
@@ -65,20 +86,90 @@ A context-aware, intelligent ecosystem that provides:
       +-------------- [ FIREBASE AUTH ]       [ GOOGLE GEMINI AI ]
                              |                        |
                              v                        v
-                     [ CLOUD FIRESTORE ]      [ ANALYTICS EVENTS ]
+                     [ CLOUD FIRESTORE ]      [ BIGQUERY ANALYTICS ]
+                                                      |
+                                                      v
+                                              [ CLOUD LOGGING ]
+                                                      |
+                                                      v
+                                              [ SECRET MANAGER ]
 ```
 
 ---
 
-## 🧪 Testing & Reliability
+## 🧪 Testing & Reliability (60 Tests Passing ✅)
 
 We don't just write code; we ensure it works.
-- **Backend**: Jest & Supertest for API reliability.
-- **Edge Cases**:
-    - Handled empty prompts with AI fallback.
-    - Handled Firebase Auth failures gracefully.
-    - Implemented API Rate Limiting to prevent abuse.
-- **Performance**: Optimized for **60fps** animations even on low-end devices.
+
+### Test Suites
+| Suite | Tests | Coverage |
+| :--- | :--- | :--- |
+| `backend/tests/api.test.js` | 22 tests | Chat validation, health endpoint, quiz API, 404 handling |
+| `backend/tests/middleware.test.js` | 8 tests | CORS, Helmet headers, XSS sanitization, rate limiting |
+| `backend/tests/utils.test.js` | 30 tests | sanitizePrompt, validateElectionQuery, truncateHistory, hashPrompt |
+
+### Running Tests
+```bash
+cd backend
+npm test           # Run all 60 tests with coverage
+npm run test:ci    # CI mode with coverage + forceExit
+npm run lint       # ESLint code quality check
+```
+
+### Edge Cases Handled
+- Empty, null, and oversized prompts rejected with 400 status.
+- XSS/HTML injection stripped via `sanitizePrompt()`.
+- SQL injection attempts handled gracefully.
+- Chat history capped at 20 messages to prevent context overflow.
+- Firebase Auth failures handled with fallback UI states.
+- API Rate Limiting (30 req/15min per IP) to prevent abuse.
+- AI response caching to reduce redundant API calls.
+
+### CI/CD Pipeline
+- **GitHub Actions** (`.github/workflows/test.yml`): Automated tests run on every push and PR.
+- **Code Coverage**: Generated via Jest with lcov reports.
+
+### Performance
+- Optimized for **60fps** animations even on low-end devices.
+- **Compression**: Gzip response compression via `compression` middleware.
+- **Caching**: In-memory cache (node-cache) for AI responses (30 min TTL) and GET endpoints.
+- **Response Time**: X-Response-Time header on all responses.
+
+---
+
+## 📁 Project Structure
+
+```
+Election-Guide-AI/
+├── .github/workflows/test.yml    # CI pipeline
+├── backend/
+│   ├── server.js                 # Express app with all middleware
+│   ├── utils.js                  # Sanitization, validation, hashing
+│   ├── .eslintrc.js              # Code quality config
+│   ├── .env.example              # Environment variable template
+│   ├── middleware/
+│   │   ├── cache.js              # In-memory caching layer
+│   │   └── security.js           # Rate limiting & input validation
+│   ├── routes/
+│   │   ├── aiRoutes.js           # Chat endpoint with caching + analytics
+│   │   ├── healthRoutes.js       # Health + stats endpoints
+│   │   └── quizRoutes.js         # Election readiness quiz API
+│   ├── services/
+│   │   ├── aiService.js          # Gemini AI integration
+│   │   ├── analytics.js          # Google BigQuery event logging
+│   │   ├── logger.js             # Google Cloud Logging
+│   │   └── secrets.js            # Google Secret Manager
+│   └── tests/
+│       ├── api.test.js           # 22 API endpoint tests
+│       ├── middleware.test.js     # 8 security middleware tests
+│       └── utils.test.js         # 30 utility function tests
+├── frontend/
+│   ├── src/app/layout.tsx        # SEO metadata, skip-nav, PWA
+│   ├── src/components/chat/      # FloatingOrb with aria-live
+│   ├── public/manifest.json      # PWA manifest
+│   └── next.config.ts            # API rewrites, standalone output
+└── README.md
+```
 
 ---
 
@@ -92,9 +183,20 @@ We don't just write code; we ensure it works.
 
 ## 👨‍💻 Installation & Setup
 
-1.  **Clone the Repo**: `git clone ...`
-2.  **Backend**: `cd backend && npm install && npm start` (Configure `.env`)
-3.  **Frontend**: `cd frontend && npm install && npm run dev` (Configure `.env.local`)
+1.  **Clone the Repo**: `git clone https://github.com/tanishq4220/Election-Guide-AI.git`
+2.  **Backend**: 
+    ```bash
+    cd backend && npm install && cp .env.example .env
+    # Configure .env with your API keys
+    npm test    # Verify 60 tests pass
+    npm start   # Start server on port 8080
+    ```
+3.  **Frontend**: 
+    ```bash
+    cd frontend && npm install
+    # Configure .env.local with Firebase keys
+    npm run dev   # Start dev server on port 3000
+    ```
 
 ---
 
