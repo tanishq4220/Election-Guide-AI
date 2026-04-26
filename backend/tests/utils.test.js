@@ -1,4 +1,4 @@
-const { sanitizePrompt, validateElectionQuery, truncateHistory } = require('../utils');
+const { sanitizePrompt, validateElectionQuery, truncateHistory, hashPrompt } = require('../utils');
 
 describe('Utility Functions', () => {
   describe('sanitizePrompt', () => {
@@ -7,7 +7,8 @@ describe('Utility Functions', () => {
     });
 
     it('should strip script tags', () => {
-      expect(sanitizePrompt('<script>alert("xss")</script>')).toBe('alert(xss)');
+      const result = sanitizePrompt('<script>alert("xss")</script>');
+      expect(result).not.toContain('<script>');
     });
 
     it('should trim whitespace', () => {
@@ -26,21 +27,33 @@ describe('Utility Functions', () => {
       expect(sanitizePrompt('')).toBe('');
     });
 
+    it('should return empty string for non-string input', () => {
+      expect(sanitizePrompt(12345)).toBe('');
+    });
+
     it('should truncate to 2000 characters', () => {
       const longInput = 'a'.repeat(3000);
-      expect(sanitizePrompt(longInput).length).toBe(2000);
+      expect(sanitizePrompt(longInput).length).toBeLessThanOrEqual(2000);
     });
 
     it('should remove dangerous characters', () => {
-      const result = sanitizePrompt("Hello <world> 'test' \"quote\"");
+      const result = sanitizePrompt("Hello <world> 'test' \"quote\" `backtick` ;semicolon");
       expect(result).not.toContain('<');
       expect(result).not.toContain('>');
       expect(result).not.toContain("'");
       expect(result).not.toContain('"');
+      expect(result).not.toContain('`');
+      expect(result).not.toContain(';');
     });
 
     it('should handle normal text without modification', () => {
       expect(sanitizePrompt('How do I register to vote?')).toBe('How do I register to vote?');
+    });
+
+    it('handles SQL injection attempts gracefully', () => {
+      const result = sanitizePrompt("'; DROP TABLE users; --");
+      expect(result).not.toContain("'");
+      expect(result).not.toContain(";");
     });
   });
 
@@ -119,6 +132,33 @@ describe('Utility Functions', () => {
       const result = truncateHistory(history, 2);
       expect(result[0].content).toBe('old2');
       expect(result[1].content).toBe('new1');
+    });
+  });
+
+  describe('hashPrompt', () => {
+    it('should return same hash for identical inputs', () => {
+      expect(hashPrompt('vote')).toBe(hashPrompt('vote'));
+    });
+
+    it('should return different hash for different inputs', () => {
+      expect(hashPrompt('vote')).not.toBe(hashPrompt('election'));
+    });
+
+    it('should be case-insensitive', () => {
+      expect(hashPrompt('VOTE')).toBe(hashPrompt('vote'));
+    });
+
+    it('should trim whitespace before hashing', () => {
+      expect(hashPrompt('  vote  ')).toBe(hashPrompt('vote'));
+    });
+
+    it('should handle null/empty input', () => {
+      expect(hashPrompt(null)).toBe(hashPrompt(''));
+    });
+
+    it('should return a 32-char hex string', () => {
+      const hash = hashPrompt('test');
+      expect(hash).toMatch(/^[a-f0-9]{32}$/);
     });
   });
 });

@@ -1,7 +1,8 @@
 /**
- * Utility functions for input sanitization, validation, and history management.
+ * Utility functions for input sanitization, validation, history management, and hashing.
  * @module utils
  */
+const crypto = require('crypto');
 
 /**
  * Sanitizes user input by stripping HTML tags and dangerous characters.
@@ -9,10 +10,10 @@
  * @returns {string} The sanitized string, or empty string if input is null/undefined.
  */
 function sanitizePrompt(input) {
-  if (!input) return '';
+  if (!input || typeof input !== 'string') return '';
   return input
     .replace(/<[^>]*>/g, '')           // Strip HTML tags
-    .replace(/[<>'"]/g, '')            // Remove dangerous chars
+    .replace(/[<>'"`;]/g, '')          // Remove dangerous chars
     .trim()
     .slice(0, 2000);                   // Hard limit
 }
@@ -40,4 +41,16 @@ function truncateHistory(history, maxMessages = 10) {
   return history.slice(-maxMessages);
 }
 
-module.exports = { sanitizePrompt, validateElectionQuery, truncateHistory };
+/**
+ * Creates an MD5 hash of a normalized prompt for cache key generation.
+ * @param {string} prompt - User prompt to hash.
+ * @returns {string} Hex hash string.
+ */
+function hashPrompt(prompt) {
+  return crypto
+    .createHash('md5')
+    .update((prompt || '').toLowerCase().trim())
+    .digest('hex');
+}
+
+module.exports = { sanitizePrompt, validateElectionQuery, truncateHistory, hashPrompt };
