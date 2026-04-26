@@ -1,0 +1,17 @@
+{
+  "name": "Election Guide AI",
+  "short_name": "ElectionAI",
+  "description": "AI-powered voting assistant — simplifying democracy for every citizen",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/globe.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -134,7 +134,7 @@ export const FloatingOrb = () => {
             )}
 
             {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide" aria-live="polite" aria-label="Chat messages" role="log">
               <AnimatePresence>
                 {messages.map((msg, i) => (
                   <motion.div 
