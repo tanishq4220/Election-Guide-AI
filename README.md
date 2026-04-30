@@ -40,19 +40,35 @@ A context-aware, intelligent ecosystem that provides:
     - **Cloud Firestore**: Persistent chat history storage.
     - **Gemini Pro (via Google Generative AI SDK)**: Advanced NLP for election queries.
     - **Google Cloud Run**: Production deployment with auto-scaling containers.
-- **♿ Extreme Accessibility**: 
+- **♿ WCAG 2.1 AA Accessibility**: 
     - **Skip Navigation Link**: For keyboard-only users to bypass repetitive content.
     - **`aria-live="polite"`**: Screen readers announce new chat messages automatically.
     - **`role="log"`**: Chat message area is semantically marked as a live log.
+    - **`role="dialog"` + `aria-modal`**: Chat window is properly identified as a modal dialog.
+    - **`role="radiogroup"`**: Mode toggle uses proper ARIA radio group pattern.
+    - **`role="progressbar"`**: Quiz progress bar with `aria-valuenow` tracking.
+    - **`aria-expanded`**: Chat FAB indicates its open/close state.
+    - **`aria-pressed`**: Motion toggle indicates its current state.
+    - **`aria-labelledby`**: All sections use properly linked heading references.
     - **Reduced Motion Mode**: For users with vestibular disorders.
     - **Text-to-Speech**: AI responses can be read aloud.
-    - **Keyboard Nav & ARIA**: 100% compliant semantic HTML.
+    - **Focus Management**: Auto-focus on chat input when opened.
+    - **Focus Ring Styles**: Visible focus indicators on all interactive elements.
+    - **Semantic HTML5**: `<article>`, `<header>`, `<footer>`, `<nav>`, `<section>`, `<main>`.
     - **PWA Manifest**: Installable as a progressive web app.
-- **🎯 Readiness Quiz**: Gamified check with dedicated API (`/api/quiz`) that provides instant feedback and scoring.
+- **🎯 Readiness Quiz**: Gamified check with dedicated API (`/api/quiz`) that provides instant feedback, progress bar, and scoring.
 - **🛡️ Production Security**:
-    - **Helmet**: CSP headers, x-frame-options, x-content-type-options.
-    - **Rate Limiting**: Global (100 req/15min) + stricter chat-specific (30 req/15min).
+    - **Helmet**: CSP headers, x-frame-options, x-content-type-options, x-dns-prefetch-control.
+    - **Rate Limiting**: Global (100 req/15min) + stricter chat-specific (30 req/15min) with standard headers.
     - **Input Validation & Sanitization**: XSS prevention, payload size limits (10KB), prompt length enforcement (2000 chars).
+    - **SQL Injection Protection**: Handled gracefully via sanitization layer.
+    - **Prototype Pollution Prevention**: Request body validation.
+- **📐 Code Quality**:
+    - **Centralized Constants Module**: All magic numbers and strings extracted to `constants.js`.
+    - **Named Regex Patterns**: HTML_TAG_PATTERN, DANGEROUS_CHAR_PATTERN for maintainability.
+    - **JSDoc Documentation**: Every module, function, and parameter fully documented.
+    - **TypeScript Interfaces**: Proper type definitions across all frontend components.
+    - **ESLint with Strict Rules**: Enforcing quotes, semicolons, trailing commas, curly braces.
 
 ---
 
@@ -60,7 +76,7 @@ A context-aware, intelligent ecosystem that provides:
 
 | Tech | Purpose | Why? |
 | :--- | :--- | :--- |
-| **Next.js 15** | Frontend Framework | For optimal performance, SEO, and App Router benefits. |
+| **Next.js 16** | Frontend Framework | For optimal performance, SEO, and App Router benefits. |
 | **Tailwind CSS 4** | Styling | For rapid, modern, and highly customized "Glassmorphism" UI. |
 | **Framer Motion** | Animations | To achieve the "Anti-Gravity" physics-based motion. |
 | **Google Gemini API** | Intelligence | State-of-the-art LLM for accurate procedural explanation. |
@@ -70,8 +86,8 @@ A context-aware, intelligent ecosystem that provides:
 | **Google Cloud Logging** | Monitoring | Structured production logging with severity-based alerting. |
 | **Google Secret Manager** | Security | Secure credential management for API keys in production. |
 | **Google Cloud Run** | Deployment | Auto-scaling serverless containers with zero cold-start config. |
-| **Jest + Supertest** | Testing | 60 passing tests covering API, middleware, and utilities. |
-| **ESLint** | Code Quality | Enforced code standards with automated linting. |
+| **Jest + Supertest** | Testing | 100+ passing tests covering API, middleware, cache, constants, and utilities. |
+| **ESLint** | Code Quality | Enforced code standards with automated linting (strict mode). |
 | **node-cache** | Efficiency | In-memory caching for AI responses and GET endpoints. |
 | **compression** | Performance | Gzip compression middleware reducing response sizes by ~70%. |
 
@@ -97,29 +113,32 @@ A context-aware, intelligent ecosystem that provides:
 
 ---
 
-## 🧪 Testing & Reliability (60 Tests Passing ✅)
+## 🧪 Testing & Reliability (100+ Tests Passing ✅)
 
 We don't just write code; we ensure it works.
 
 ### Test Suites
 | Suite | Tests | Coverage |
 | :--- | :--- | :--- |
-| `backend/tests/api.test.js` | 22 tests | Chat validation, health endpoint, quiz API, 404 handling |
-| `backend/tests/middleware.test.js` | 8 tests | CORS, Helmet headers, XSS sanitization, rate limiting |
+| `backend/tests/api.test.js` | 50+ tests | Chat validation, health endpoint, quiz API, scoring, 404 handling, headers |
+| `backend/tests/middleware.test.js` | 13 tests | CORS, Helmet headers, CSP, XSS sanitization, rate limiting, SQL injection |
 | `backend/tests/utils.test.js` | 30 tests | sanitizePrompt, validateElectionQuery, truncateHistory, hashPrompt |
+| `backend/tests/cache.test.js` | 7 tests | Cache set/get, case-insensitivity, clearing, stats, overwriting |
+| `backend/tests/constants.test.js` | 11 tests | All exported constants validated, HTTP codes, rate limits, BigQuery config |
 
 ### Running Tests
 ```bash
 cd backend
-npm test           # Run all 60 tests with coverage
+npm test           # Run all 100+ tests with coverage
 npm run test:ci    # CI mode with coverage + forceExit
 npm run lint       # ESLint code quality check
 ```
 
 ### Edge Cases Handled
-- Empty, null, and oversized prompts rejected with 400 status.
+- Empty, null, numeric, and oversized prompts rejected with 400 status.
 - XSS/HTML injection stripped via `sanitizePrompt()`.
 - SQL injection attempts handled gracefully.
+- Prototype pollution attacks prevented.
 - Chat history capped at 20 messages to prevent context overflow.
 - Firebase Auth failures handled with fallback UI states.
 - API Rate Limiting (30 req/15min per IP) to prevent abuse.
@@ -144,11 +163,12 @@ Election-Guide-AI/
 ├── .github/workflows/test.yml    # CI pipeline
 ├── backend/
 │   ├── server.js                 # Express app with all middleware
+│   ├── constants.js              # Centralized constants & error messages
 │   ├── utils.js                  # Sanitization, validation, hashing
-│   ├── .eslintrc.js              # Code quality config
+│   ├── .eslintrc.js              # Strict code quality config
 │   ├── .env.example              # Environment variable template
 │   ├── middleware/
-│   │   ├── cache.js              # In-memory caching layer
+│   │   ├── cache.js              # In-memory caching layer with stats
 │   │   └── security.js           # Rate limiting & input validation
 │   ├── routes/
 │   │   ├── aiRoutes.js           # Chat endpoint with caching + analytics
@@ -160,12 +180,17 @@ Election-Guide-AI/
 │   │   ├── logger.js             # Google Cloud Logging
 │   │   └── secrets.js            # Google Secret Manager
 │   └── tests/
-│       ├── api.test.js           # 22 API endpoint tests
-│       ├── middleware.test.js     # 8 security middleware tests
-│       └── utils.test.js         # 30 utility function tests
+│       ├── api.test.js           # 50+ API endpoint tests
+│       ├── middleware.test.js     # 13 security middleware tests
+│       ├── utils.test.js         # 30 utility function tests
+│       ├── cache.test.js         # 7 cache module tests
+│       └── constants.test.js     # 11 constants validation tests
 ├── frontend/
-│   ├── src/app/layout.tsx        # SEO metadata, skip-nav, PWA
-│   ├── src/components/chat/      # FloatingOrb with aria-live
+│   ├── src/app/layout.tsx        # SEO metadata, skip-nav, viewport, PWA
+│   ├── src/app/page.tsx          # Main page with full ARIA accessibility
+│   ├── src/components/chat/      # FloatingOrb with dialog, radiogroup, aria-live
+│   ├── src/components/election/  # Timeline (list), Quiz (progressbar)
+│   ├── src/components/ui/        # FloatingCard (article), CursorTrail
 │   ├── public/manifest.json      # PWA manifest
 │   └── next.config.ts            # API rewrites, standalone output
 └── README.md
@@ -188,7 +213,7 @@ Election-Guide-AI/
     ```bash
     cd backend && npm install && cp .env.example .env
     # Configure .env with your API keys
-    npm test    # Verify 60 tests pass
+    npm test    # Verify 100+ tests pass
     npm start   # Start server on port 8080
     ```
 3.  **Frontend**: 

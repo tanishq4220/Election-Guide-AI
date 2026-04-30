@@ -1,13 +1,14 @@
 /**
  * Google Cloud Secret Manager client for secure API key retrieval.
- * @module secrets
+ * Provides secure access to secrets stored in Google Cloud.
+ * @module services/secrets
  */
 
 /**
  * Retrieves a secret value from Google Cloud Secret Manager.
  * @param {string} secretName - The name of the secret to access.
  * @returns {Promise<string>} The secret value as a UTF-8 string.
- * @throws {Error} If the secret cannot be accessed.
+ * @throws {Error} If the secret cannot be accessed or does not exist.
  */
 async function getSecret(secretName) {
   const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');

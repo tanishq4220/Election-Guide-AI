@@ -1,19 +1,25 @@
 /**
  * Google Cloud Logging service with structured log entries.
  * Falls back to console logging when Cloud Logging is unavailable.
- * @module logger
+ * @module services/logger
  */
+const { LOG_NAME } = require('../constants');
 
+/** @type {import('@google-cloud/logging').Log|null} */
 let log = null;
 
-// Lazy initialization — only connect when GOOGLE_CLOUD_PROJECT is set
+/**
+ * Lazy-initializes and returns the Google Cloud Logging client.
+ * Only connects when GOOGLE_CLOUD_PROJECT is set in the environment.
+ * @returns {import('@google-cloud/logging').Log|null} The Cloud Logging log instance, or null if unavailable.
+ */
 function getLogClient() {
   if (log) return log;
   try {
     const { Logging } = require('@google-cloud/logging');
     const logging = new Logging({ projectId: process.env.GOOGLE_CLOUD_PROJECT });
-    log = logging.log('election-guide-api');
-  } catch (err) {
+    log = logging.log(LOG_NAME);
+  } catch (_err) {
     // Cloud Logging not available — will use console fallback
   }
   return log;
@@ -21,6 +27,8 @@ function getLogClient() {
 
 /**
  * Structured logger that writes to both Google Cloud Logging and console.
+ * Provides info, error, and warn severity levels with consistent metadata.
+ * @namespace logger
  */
 const logger = {
   /**
@@ -72,7 +80,7 @@ const logger = {
       client.write(entry).catch(() => {});
     }
     console.warn(`[WARN] ${message}`, metadata);
-  }
+  },
 };
 
 module.exports = logger;

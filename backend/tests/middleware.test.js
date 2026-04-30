@@ -21,7 +21,17 @@ describe('Security Middleware', () => {
     expect(res.headers).toHaveProperty('x-frame-options');
   });
 
-  it('should reject oversized prompts via input validation', async () => {
+  it('should have x-dns-prefetch-control header', async () => {
+    const res = await request(app).get('/health');
+    expect(res.headers).toHaveProperty('x-dns-prefetch-control');
+  });
+
+  it('should have content-security-policy header', async () => {
+    const res = await request(app).get('/health');
+    expect(res.headers).toHaveProperty('content-security-policy');
+  });
+
+  it('should reject oversized prompts', async () => {
     const res = await request(app)
       .post('/api/chat')
       .send({ prompt: 'a'.repeat(2001) });
@@ -30,20 +40,16 @@ describe('Security Middleware', () => {
   });
 
   it('should sanitize XSS in prompt', async () => {
-    // The prompt '<script>alert("xss")</script>' after sanitization
-    // goes through sanitizePrompt which strips HTML tags
     const res = await request(app)
       .post('/api/chat')
       .send({ prompt: '<script>alert("xss")</script>' });
-    // Even if it reaches the AI, the sanitized version won't have <script> tags
     if (res.statusCode === 200 && res.body.message) {
       expect(res.body.message).not.toContain('<script>');
     }
-    // For this test, we just verify it doesn't crash
     expect([200, 400, 500]).toContain(res.statusCode);
   });
 
-  it('should return compressed responses when accepted', async () => {
+  it('should return compressed responses', async () => {
     const res = await request(app)
       .get('/health')
       .set('Accept-Encoding', 'gzip');
@@ -55,14 +61,34 @@ describe('Security Middleware', () => {
       .post('/api/chat')
       .set('Content-Type', 'text/plain')
       .send('not json');
-    // Without proper JSON, the body parser won't parse, so prompt will be missing
     expect([400, 500]).toContain(res.statusCode);
   });
 
-  it('should reject invalid mode in request body', async () => {
+  it('should reject invalid mode', async () => {
     const res = await request(app)
       .post('/api/chat')
       .send({ prompt: 'test query', mode: 'unknown' });
     expect(res.statusCode).toBe(400);
+  });
+
+  it('should reject boolean mode value', async () => {
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ prompt: 'test query', mode: true });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('should handle SQL injection gracefully', async () => {
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ prompt: "'; DROP TABLE users; --" });
+    expect([200, 400, 500]).toContain(res.statusCode);
+  });
+
+  it('should handle prototype pollution attempt', async () => {
+    const res = await request(app)
+      .post('/api/chat')
+      .send({ prompt: 'test', __proto__: { admin: true } });
+    expect([200, 400, 500]).toContain(res.statusCode);
   });
 });

@@ -1,11 +1,23 @@
 /**
  * Quiz routes for election readiness assessment.
+ * Provides questions and scoring for a gamified voter readiness check.
  * @module routes/quizRoutes
  */
 const express = require('express');
+
 const router = express.Router();
 const { cacheMiddleware } = require('../middleware/cache');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../constants');
 
+/**
+ * @typedef {Object} QuizQuestion
+ * @property {number} id - Unique question identifier.
+ * @property {string} question - The question text.
+ * @property {boolean} correctAnswer - The correct answer (true/false).
+ * @property {string} tip - Helpful guidance shown for incorrect answers.
+ */
+
+/** @type {QuizQuestion[]} */
 const QUIZ_QUESTIONS = [
   {
     id: 1,
@@ -41,27 +53,35 @@ const QUIZ_QUESTIONS = [
 
 /**
  * GET / — Returns the full list of quiz questions (cached for 1 hour).
+ * Question objects omit the `correctAnswer` field to prevent cheating.
+ * @route GET /
+ * @returns {{ questions: Array<{ id: number, question: string, tip: string }>, total: number }}
  */
 router.get('/', cacheMiddleware(3600), (req, res) => {
   res.json({
     questions: QUIZ_QUESTIONS.map(({ id, question, tip }) => ({ id, question, tip })),
-    total: QUIZ_QUESTIONS.length
+    total: QUIZ_QUESTIONS.length,
   });
 });
 
 /**
- * POST /submit — Evaluates quiz answers and returns score.
+ * POST /submit — Evaluates quiz answers and returns the score.
+ * @route POST /submit
+ * @param {Array<{ id: number, answer: boolean }>} req.body.answers - User's answers.
+ * @returns {{ score: number, total: number, percentage: number, results: Array }}
  */
 router.post('/submit', (req, res) => {
   const { answers } = req.body;
 
   if (!answers || !Array.isArray(answers)) {
-    return res.status(400).json({ error: 'Answers must be an array.' });
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: ERROR_MESSAGES.ANSWERS_REQUIRED,
+    });
   }
 
   let score = 0;
   const results = QUIZ_QUESTIONS.map((q) => {
-    const userAnswer = answers.find(a => a.id === q.id);
+    const userAnswer = answers.find((a) => a.id === q.id);
     const isCorrect = userAnswer && userAnswer.answer === q.correctAnswer;
     if (isCorrect) score++;
     return {

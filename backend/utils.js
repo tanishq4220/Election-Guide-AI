@@ -3,19 +3,26 @@
  * @module utils
  */
 const crypto = require('crypto');
+const { MAX_PROMPT_LENGTH, DEFAULT_TRUNCATE_LIMIT } = require('./constants');
+
+/** Regex pattern to match HTML tags. */
+const HTML_TAG_PATTERN = /<[^>]*>/g;
+
+/** Regex pattern to match dangerous characters. */
+const DANGEROUS_CHAR_PATTERN = /[<>'"`;]/g;
 
 /**
  * Sanitizes user input by stripping HTML tags and dangerous characters.
- * @param {string|null} input - The raw user input to sanitize.
+ * @param {string|null|undefined} input - The raw user input to sanitize.
  * @returns {string} The sanitized string, or empty string if input is null/undefined.
  */
 function sanitizePrompt(input) {
   if (!input || typeof input !== 'string') return '';
   return input
-    .replace(/<[^>]*>/g, '')           // Strip HTML tags
-    .replace(/[<>'"`;]/g, '')          // Remove dangerous chars
+    .replace(HTML_TAG_PATTERN, '')
+    .replace(DANGEROUS_CHAR_PATTERN, '')
     .trim()
-    .slice(0, 2000);                   // Hard limit
+    .slice(0, MAX_PROMPT_LENGTH);
 }
 
 /**
@@ -26,7 +33,7 @@ function sanitizePrompt(input) {
 function validateElectionQuery(prompt) {
   if (!prompt || typeof prompt !== 'string') return false;
   if (prompt.trim().length === 0) return false;
-  if (prompt.length > 2000) return false;
+  if (prompt.length > MAX_PROMPT_LENGTH) return false;
   return true;
 }
 
@@ -36,15 +43,16 @@ function validateElectionQuery(prompt) {
  * @param {number} [maxMessages=10] - Maximum number of messages to keep.
  * @returns {Array} The truncated history array.
  */
-function truncateHistory(history, maxMessages = 10) {
+function truncateHistory(history, maxMessages = DEFAULT_TRUNCATE_LIMIT) {
   if (!Array.isArray(history)) return [];
   return history.slice(-maxMessages);
 }
 
 /**
  * Creates an MD5 hash of a normalized prompt for cache key generation.
+ * Normalizes by lowercasing and trimming whitespace before hashing.
  * @param {string} prompt - User prompt to hash.
- * @returns {string} Hex hash string.
+ * @returns {string} 32-character hex hash string.
  */
 function hashPrompt(prompt) {
   return crypto

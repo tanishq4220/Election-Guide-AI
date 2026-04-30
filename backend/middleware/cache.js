@@ -1,20 +1,30 @@
 /**
  * In-memory caching middleware and AI response cache for performance optimization.
  * Uses node-cache for lightweight, zero-dependency caching.
- * @module cache
+ * @module middleware/cache
  */
 const NodeCache = require('node-cache');
 const crypto = require('crypto');
+const {
+  DEFAULT_CACHE_TTL_SECONDS,
+  AI_CACHE_TTL_SECONDS,
+  CACHE_CHECK_PERIOD_SECONDS,
+} = require('../constants');
 
-const cache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
+/** Shared in-memory cache instance. */
+const cache = new NodeCache({
+  stdTTL: DEFAULT_CACHE_TTL_SECONDS,
+  checkperiod: CACHE_CHECK_PERIOD_SECONDS,
+});
 
 /**
  * Express middleware that caches GET responses for the specified TTL.
  * Sets X-Cache header to 'HIT' or 'MISS' for observability.
+ * Non-GET requests are passed through without caching.
  * @param {number} [ttl=3600] - Cache time-to-live in seconds.
- * @returns {Function} Express middleware function.
+ * @returns {import('express').RequestHandler} Express middleware function.
  */
-function cacheMiddleware(ttl = 3600) {
+function cacheMiddleware(ttl = DEFAULT_CACHE_TTL_SECONDS) {
   return (req, res, next) => {
     if (req.method !== 'GET') return next();
 
@@ -55,12 +65,39 @@ function getCachedResponse(prompt) {
 }
 
 /**
- * Stores an AI response in the cache for 30 minutes.
+ * Stores an AI response in the cache.
  * @param {string} prompt - The user's prompt.
  * @param {string} response - The AI response to cache.
  */
 function setCachedResponse(prompt, response) {
-  cache.set(`ai:${hashPrompt(prompt)}`, response, 1800); // 30 min
+  cache.set(`ai:${hashPrompt(prompt)}`, response, AI_CACHE_TTL_SECONDS);
 }
 
-module.exports = { cacheMiddleware, getCachedResponse, setCachedResponse };
+/**
+ * Clears all entries from the cache.
+ * Useful for testing and cache invalidation.
+ */
+function clearCache() {
+  cache.flushAll();
+}
+
+/**
+ * Returns current cache statistics.
+ * @returns {{ hits: number, misses: number, keys: number }} Cache stats.
+ */
+function getCacheStats() {
+  const stats = cache.getStats();
+  return {
+    hits: stats.hits,
+    misses: stats.misses,
+    keys: cache.keys().length,
+  };
+}
+
+module.exports = {
+  cacheMiddleware,
+  getCachedResponse,
+  setCachedResponse,
+  clearCache,
+  getCacheStats,
+};

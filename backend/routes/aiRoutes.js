@@ -1,8 +1,10 @@
 /**
  * AI chat route handler with input validation, caching, and analytics.
+ * Provides the primary chat endpoint for the Election Guide AI assistant.
  * @module routes/aiRoutes
  */
 const express = require('express');
+
 const router = express.Router();
 const { getElectionResponse } = require('../services/aiService');
 const { sanitizePrompt, validateElectionQuery, truncateHistory } = require('../utils');
@@ -10,21 +12,31 @@ const { getCachedResponse, setCachedResponse } = require('../middleware/cache');
 const { logChatEvent } = require('../services/analytics');
 const { chatLimiter, validateChatInput } = require('../middleware/security');
 const logger = require('../services/logger');
+const { HTTP_STATUS, ERROR_MESSAGES } = require('../constants');
 
 /**
  * POST /chat — Handles incoming chat requests and returns AI-generated responses.
  * Applies stricter rate limiting, input validation, prompt sanitization,
  * response caching, and BigQuery event logging.
+ *
+ * @route POST /chat
+ * @param {string} req.body.prompt - The user's election-related question.
+ * @param {Array} [req.body.history] - Previous chat messages for context.
+ * @param {string} [req.body.userId] - Authenticated user's ID.
+ * @param {string} [req.body.mode] - Response mode: 'simple' or 'detailed'.
+ * @returns {{ message: string }} The AI-generated response.
  */
 router.post('/chat', chatLimiter, validateChatInput, async (req, res) => {
   const { prompt, history, userId, mode } = req.body;
   const startTime = Date.now();
 
-  // Sanitize the prompt
+  // Sanitize the prompt to remove XSS and injection vectors
   const cleanPrompt = sanitizePrompt(prompt);
 
   if (!validateElectionQuery(cleanPrompt)) {
-    return res.status(400).json({ error: 'Invalid or empty prompt after sanitization.' });
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: ERROR_MESSAGES.INVALID_PROMPT,
+    });
   }
 
   // Check cache first for efficiency
@@ -34,7 +46,7 @@ router.post('/chat', chatLimiter, validateChatInput, async (req, res) => {
     return res.json({ message: cached });
   }
 
-  // Truncate history to last 10 messages
+  // Truncate history to prevent context overflow
   const safeHistory = truncateHistory(history);
 
   try {
@@ -50,16 +62,16 @@ router.post('/chat', chatLimiter, validateChatInput, async (req, res) => {
       prompt: cleanPrompt,
       mode,
       responseTime,
-      tokenCount: response ? response.length : 0
+      tokenCount: response ? response.length : 0,
     }).catch(() => {});
 
     logger.info('Chat response generated', { responseTime, mode });
     res.json({ message: response });
   } catch (error) {
     logger.error('AI route error', error);
-    res.status(500).json({
-      error: "Failed to generate response from AI",
-      details: error.message
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      error: ERROR_MESSAGES.AI_FAILURE,
+      details: error.message,
     });
   }
 });
