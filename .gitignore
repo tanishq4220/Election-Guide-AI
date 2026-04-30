@@ -31,6 +31,13 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Coverage
+coverage/
+backend/coverage/
+
+# Archives
+*.zip
+
 # Backend specific
 backend/node_modules/
 backend/.env
