@@ -19,7 +19,31 @@ const steps: TimelineStep[] = [
   { id: 4, title: "Counting", description: "Votes are counted and results declared", icon: BarChart3, color: "from-green-500 to-emerald-400" },
 ];
 
+const STAR_POSITIONS = [
+  { id: 1, top: '15%', left: '20%', duration: 3.5 },
+  { id: 2, top: '75%', left: '80%', duration: 4.2 },
+  { id: 3, top: '25%', left: '90%', duration: 2.8 },
+  { id: 4, top: '85%', left: '10%', duration: 3.9 },
+  { id: 5, top: '45%', left: '50%', duration: 4.5 },
+  { id: 6, top: '5%', left: '60%', duration: 2.5 },
+  { id: 7, top: '95%', left: '30%', duration: 3.1 },
+  { id: 8, top: '35%', left: '15%', duration: 4.8 },
+  { id: 9, top: '65%', left: '85%', duration: 2.2 },
+  { id: 10, top: '55%', left: '5%', duration: 3.7 },
+  { id: 11, top: '10%', left: '40%', duration: 4.1 },
+  { id: 12, top: '90%', left: '70%', duration: 2.9 },
+  { id: 13, top: '20%', left: '95%', duration: 3.4 },
+  { id: 14, top: '80%', left: '25%', duration: 4.6 },
+  { id: 15, top: '50%', left: '75%', duration: 2.7 },
+  { id: 16, top: '30%', left: '55%', duration: 3.3 },
+  { id: 17, top: '70%', left: '45%', duration: 4.3 },
+  { id: 18, top: '40%', left: '35%', duration: 2.6 },
+  { id: 19, top: '60%', left: '95%', duration: 3.8 },
+  { id: 20, top: '10%', left: '85%', duration: 4.7 }
+];
+
 export const InteractiveTimeline = () => {
+
   return (
     <div 
       className="relative w-full h-[600px] flex items-center justify-center overflow-hidden"
@@ -91,16 +115,16 @@ export const InteractiveTimeline = () => {
 
       {/* Background Stars/Particles */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        {[...Array(20)].map((_, i) => (
+        {STAR_POSITIONS.map((star) => (
           <motion.div
-            key={`star-${i}`}
+            key={`star-${star.id}`}
             initial={{ opacity: 0.1 }}
             animate={{ opacity: [0.1, 0.5, 0.1] }}
-            transition={{ duration: Math.random() * 3 + 2, repeat: Infinity }}
+            transition={{ duration: star.duration, repeat: Infinity }}
             className="absolute w-1 h-1 bg-white rounded-full"
             style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
+              top: star.top,
+              left: star.left,
             }}
           />
         ))}

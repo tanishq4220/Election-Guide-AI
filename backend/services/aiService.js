@@ -4,7 +4,7 @@
  * and Gemini for natural language understanding.
  * @module services/aiService
  */
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const admin = require('firebase-admin');
 const logger = require('./logger');
 const { MAX_OUTPUT_TOKENS } = require('../constants');
@@ -19,7 +19,7 @@ if (!admin.apps.length) {
       });
     }
   } catch (error) {
-    logger.error("Firebase Admin initialization failed", error);
+    logger.error('Firebase Admin initialization failed', error);
   }
 }
 
@@ -40,9 +40,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * @returns {Promise<string>} The AI-generated response text.
  * @throws {Error} If Gemini API call fails.
  */
-const getElectionResponse = async (prompt, history = [], userId = null, mode = "detailed") => {
+const getElectionResponse = async (prompt, history = [], userId = null, mode = 'detailed') => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
     const systemInstruction = `
       You are "Election Guide AI".
@@ -80,7 +80,7 @@ const getElectionResponse = async (prompt, history = [], userId = null, mode = "
 
     return text;
   } catch (error) {
-    logger.error("Gemini API error", error);
+    logger.error('Gemini API error', error);
     throw error;
   }
 };

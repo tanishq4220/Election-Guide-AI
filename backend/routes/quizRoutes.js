@@ -21,34 +21,34 @@ const { HTTP_STATUS, ERROR_MESSAGES } = require('../constants');
 const QUIZ_QUESTIONS = [
   {
     id: 1,
-    question: "Are you 18 years or older?",
+    question: 'Are you 18 years or older?',
     correctAnswer: true,
-    tip: "You must be 18 years old on or before the election date to be eligible to vote."
+    tip: 'You must be 18 years old on or before the election date to be eligible to vote.',
   },
   {
     id: 2,
-    question: "Do you have a valid Voter ID (EPIC)?",
+    question: 'Do you have a valid Voter ID (EPIC)?',
     correctAnswer: true,
-    tip: "A Voter ID (EPIC card) is the primary document for voting. Apply at nvsp.in if you don't have one."
+    tip: "A Voter ID (EPIC card) is the primary document for voting. Apply at nvsp.in if you don't have one.",
   },
   {
     id: 3,
-    question: "Is your name in the Electoral Roll?",
+    question: 'Is your name in the Electoral Roll?',
     correctAnswer: true,
-    tip: "Check your registration status at nvsp.in or electoralsearch.in."
+    tip: 'Check your registration status at nvsp.in or electoralsearch.in.',
   },
   {
     id: 4,
-    question: "Do you know your polling booth location?",
+    question: 'Do you know your polling booth location?',
     correctAnswer: true,
-    tip: "Use the Voter Helpline App or the Election Commission website to locate your booth."
+    tip: 'Use the Voter Helpline App or the Election Commission website to locate your booth.',
   },
   {
     id: 5,
-    question: "Can you carry your mobile phone inside the polling booth?",
+    question: 'Can you carry your mobile phone inside the polling booth?',
     correctAnswer: false,
-    tip: "Mobile phones are not allowed inside the polling booth as per Election Commission rules."
-  }
+    tip: 'Mobile phones are not allowed inside the polling booth as per Election Commission rules.',
+  },
 ];
 
 /**

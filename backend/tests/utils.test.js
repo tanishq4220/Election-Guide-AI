@@ -53,7 +53,7 @@ describe('Utility Functions', () => {
     it('handles SQL injection attempts gracefully', () => {
       const result = sanitizePrompt("'; DROP TABLE users; --");
       expect(result).not.toContain("'");
-      expect(result).not.toContain(";");
+      expect(result).not.toContain(';');
     });
   });
 

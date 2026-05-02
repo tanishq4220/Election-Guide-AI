@@ -50,7 +50,7 @@ export const FloatingOrb = () => {
       try {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
-      } catch (error) {
+      } catch {
         // Login failed — user cancelled or popup blocked
       }
     }

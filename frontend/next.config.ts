@@ -4,9 +4,6 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   async rewrites() {
     return [
       {

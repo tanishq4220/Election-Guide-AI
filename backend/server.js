@@ -37,17 +37,17 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "apis.google.com"],
-      connectSrc: ["'self'", "*.googleapis.com", "*.firebaseapp.com"],
-      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'apis.google.com'],
+      connectSrc: ["'self'", '*.googleapis.com', '*.firebaseapp.com'],
+      imgSrc: ["'self'", 'data:', 'https:'],
       styleSrc: ["'self'", "'unsafe-inline'"],
-    }
+    },
   },
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS || "*",
+  origin: process.env.ALLOWED_ORIGINS || '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -78,25 +78,25 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // ─── Cache static assets ───────────────────────────────────────────
-app.use("/_next", express.static(".next", {
-  maxAge: "1y",
-  immutable: true
+app.use('/_next', express.static('.next', {
+  maxAge: '1y',
+  immutable: true,
 }));
 
 // ─── Health + Metrics Endpoint ──────────────────────────────────────
-app.get("/health", (req, res) => {
+app.get('/health', (req, res) => {
   res.json({
-    status: "ok",
+    status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    version: require('./package.json').version
+    version: require('./package.json').version,
   });
 });
 
 // ─── Root Status ────────────────────────────────────────────────────
-app.get("/", (req, res) => {
-  res.send("Election Guide AI Backend Running ✅");
+app.get('/', (req, res) => {
+  res.send('Election Guide AI Backend Running ✅');
 });
 
 // ─── Routes ─────────────────────────────────────────────────────────

@@ -41,7 +41,7 @@ const logger = {
     if (client) {
       const entry = client.entry(
         { severity: 'INFO', resource: { type: 'global' } },
-        { message, ...metadata, timestamp: new Date().toISOString() }
+        { message, ...metadata, timestamp: new Date().toISOString() },
       );
       client.write(entry).catch(() => {});
     }
@@ -58,7 +58,7 @@ const logger = {
     if (client) {
       const entry = client.entry(
         { severity: 'ERROR', resource: { type: 'global' } },
-        { message, error: error.message, stack: error.stack }
+        { message, error: error.message, stack: error.stack },
       );
       client.write(entry).catch(() => {});
     }
@@ -75,7 +75,7 @@ const logger = {
     if (client) {
       const entry = client.entry(
         { severity: 'WARNING', resource: { type: 'global' } },
-        { message, ...metadata }
+        { message, ...metadata },
       );
       client.write(entry).catch(() => {});
     }
